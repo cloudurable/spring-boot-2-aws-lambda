@@ -62,6 +62,11 @@ task buildZip(type: Zip) {
       exclude 'tomcat-embed-*'
     }
   }
+  into('.') {
+    from("build/classes/kotlin/main") {
+      include '**/**'
+    }
+  }
 }
 
 
@@ -76,7 +81,7 @@ compileTestKotlin {
   }
 }
 
-//build.dependsOn buildZip
+build.finalizedBy(buildZip)
 
 //distributions {
 //  main {
