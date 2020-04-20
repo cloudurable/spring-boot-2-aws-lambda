@@ -8,6 +8,13 @@
 I started with [AWS Serverless Application Model - Developer Guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install-mac.html)
 but then upgraded to Spring 2.latest using this sample: [AWS Spring Boot Support Sample](https://github.com/awslabs/aws-serverless-java-container/tree/master/samples/springboot2/pet-store).
 
+# Changes I made 
+
+* Moved to Spring Boot 2.2.6.RELEASE
+* Moved from maven to Gradle 
+* Moved From Java to Kotlin 
+
+
 # Install AWS serverless development tools
 ```sh
 brew tap aws/tap
@@ -168,9 +175,142 @@ cd bookservice
 The above also creates a gradle build.
 
 
-## Upgraded to Gradle and got rid of maven.
+## Moved to Kotlin from Java 
+
+The major change here other than the right kotlin libs was copying the kotlin files
+from Kotlin 
+
+```groovy
+
+task buildZip(type: Zip) {
+  from compileJava
+  from processResources
+  into('lib') {
+    from(configurations.compileClasspath) {
+      exclude 'tomcat-embed-*'
+    }
+  }
+  into('.') {
+    from("build/classes/kotlin/main") {
+      include '**/**'
+    }
+  }
+}
+
 
 ```
+
+And, then triggering that task after the build 
+
+```groovy 
+build.finalizedBy(buildZip)
+
+``` 
+
+Now it works just like it did for Java. 
+
+```groovy
+buildscript {
+  ext.kotlin_version = '1.3.72'
+
+  ext.spring_boot_version = '2.2.6.RELEASE'
+  repositories {
+    jcenter()
+    mavenLocal()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version" // See https://kotlinlang.org/docs/reference/compiler-plugins.html#spring-support
+  }
+}
+
+version = '1.0.0'
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'kotlin'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: "kotlin-spring" // https://kotlinlang.org/docs/reference/compiler-plugins.html#spring-support
+apply plugin: 'java'
+
+//apply plugin: 'java-library-distribution'
+
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+  jcenter()
+  mavenLocal()
+  mavenCentral()
+}
+
+dependencies {
+
+
+  testCompile "org.springframework.boot:spring-boot-starter-test"
+  annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+
+  compile (
+          implementation('org.springframework.boot:spring-boot-starter-web:2.2.6.RELEASE') {
+            //exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+          },
+          "com.amazonaws.serverless:aws-serverless-java-container-springboot2:1.5",
+          'io.symphonia:lambda-logging:1.0.1'
+  )
+  testCompile("junit:junit")
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+  runtime "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+  testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
+  compile "com.fasterxml.jackson.module:jackson-module-kotlin"
+}
+
+task buildZip(type: Zip) {
+  from compileJava
+  from processResources
+  into('lib') {
+    from(configurations.compileClasspath) {
+      exclude 'tomcat-embed-*'
+    }
+  }
+  into('.') {
+    from("build/classes/kotlin/main") {
+      include '**/**'
+    }
+  }
+}
+
+
+compileKotlin {
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+}
+compileTestKotlin {
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+}
+
+build.finalizedBy(buildZip)
+
+//distributions {
+//  main {
+//    distributionBaseName = 'book-service'
+//  }
+//}
+
+
+
+```
+
+## Upgraded to Gradle and got rid of maven.
+
+Moved to Spring 2.x. 
+I had to get rid of the exception handler that was configured in `Application.java.` 
+
+```groovy
 buildscript {
 
   ext.spring_boot_version = '2.2.6.RELEASE'
@@ -226,7 +366,5 @@ task buildZip(type: Zip) {
 }
 
 build.dependsOn buildZip
-
-
 
 ```
