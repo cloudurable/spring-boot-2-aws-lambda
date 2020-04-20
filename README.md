@@ -15,10 +15,18 @@ brew install aws-sam-cli
 ```
 Installing this `aws-sam-cli` allows you to easily test locally and to test via AWS Lambda.
 
+
+## Do a clean deploy to regenerate the zip file 
+
+```sh
+./gradlew clean build 
+```
+
 # Start the sample locally
 ```sh
 sam local start-api --template sam.yaml
 ```
+
 
 # Ping local app (runs in docker)
 ```sh
@@ -36,6 +44,12 @@ aws --region us-gov-east-1 s3 mb s3://monkey-books-sample
 ```
 
 Replace `monkey-books-sample` with your bucket name. 
+
+## Do a clean deploy to regenerate the zip file 
+
+```sh
+./gradlew clean build 
+```
 
 # Create cloudformation to deploy our app
 
@@ -123,6 +137,14 @@ output
 ```
 
 
+## If you have jq, then you can do this 
+
+```sh
+
+ export END_POINT=`aws --region us-gov-east-1 cloudformation describe-stacks --stack-name bookApi  | jq -r ".Stacks[0].Outputs[0].OutputValue"`
+ curl  $END_POINT                                                                                                                              
+
+```
 ## Todo 
 
 * Automate deploy to AWS 
